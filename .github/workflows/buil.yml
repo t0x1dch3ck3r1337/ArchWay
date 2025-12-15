@@ -1,0 +1,192 @@
+name: 🐍 Python to EXE Builder
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:  # Ручной запуск
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    # 1. Забрать код
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    # 2. 🔍 Найти ВСЕ Python файлы
+    - name: 🔍 Find Python files
+      id: find-files
+      run: |
+        echo "=== Поиск Python файлов ==="
+        
+        # Ищем все .py файлы (кроме тестов)
+        $files = Get-ChildItem -Recurse -Filter *.py | 
+                  Where-Object { 
+                    $_.Name -notmatch 'test' -and 
+                    $_.FullName -notmatch 'venv|env|\.git' 
+                  }
+        
+        if ($files.Count -eq 0) {
+          echo "❌ Python файлы не найдены!"
+          exit 1
+        }
+        
+        echo "✅ Найдено $($files.Count) Python файлов:"
+        $files | ForEach-Object { 
+          echo "  - $($_.Name) (в $($_.Directory.Name))" 
+        }
+        
+        # Сохраняем список для следующих шагов
+        $fileList = $files | ForEach-Object { $_.FullName } | ConvertTo-Json
+        echo "fileList=$fileList" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        
+        # Определяем главный файл
+        $mainFiles = @('main.py', 'app.py', 'run.py', 'manager.py', 'server.py', 'start.py')
+        
+        foreach ($name in $mainFiles) {
+          $file = Get-Item $name -ErrorAction SilentlyContinue
+          if ($file) {
+            echo "mainFile=$($file.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            echo "✅ Главный файл определен: $name"
+            break
+          }
+        }
+        
+        # Если не нашли стандартные имена, берем первый .py файл
+        if (-not (Test-Path 'env:GITHUB_OUTPUT')) {
+          $first = $files[0].FullName
+          echo "mainFile=$first" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          echo "⚠️  Используем первый найденный файл: $($files[0].Name)"
+        }
+    
+    # 3. 🐍 Установить Python
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    # 4. 📦 Установить PyInstaller
+    - name: 📦 Install PyInstaller
+      run: |
+        pip install --upgrade pip
+        pip install pyinstaller
+        
+        # Пробуем установить зависимости
+        if (Test-Path "requirements.txt") {
+          echo "📋 Найден requirements.txt, устанавливаем зависимости..."
+          pip install -r requirements.txt
+        } else {
+          echo "📋 requirements.txt не найден, только базовые зависимости"
+        }
+    
+    # 5. 🔨 Собрать EXE из найденного файла
+    - name: 🔨 Build EXE
+      id: build-exe
+      run: |
+        $mainFile = "${{ steps.find-files.outputs.mainFile }}"
+        
+        if (-not $mainFile) {
+          # Резервный вариант: ищем вручную
+          $mainFile = Get-ChildItem -Recurse -Filter *.py | 
+                      Where-Object { $_.Name -notmatch 'test' } | 
+                      Select-Object -First 1 -ExpandProperty FullName
+        }
+        
+        echo "📦 Сборка EXE из: $mainFile"
+        
+        # Определяем имя для EXE (без .py)
+        $exeName = [System.IO.Path]::GetFileNameWithoutExtension($mainFile)
+        
+        # Собираем EXE
+        pyinstaller `
+          --onefile `
+          --console `
+          --name "$exeName" `
+          --clean `
+          $mainFile
+        
+        echo "exeName=$exeName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        echo "exePath=dist/$exeName.exe" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+    
+    # 6. 📁 Создать полный пакет (EXE + все файлы проекта)
+    - name: 📁 Create complete package
+      run: |
+        $exeName = "${{ steps.build-exe.outputs.exeName }}"
+        
+        # Создаем папку для релиза
+        New-Item -ItemType Directory -Path "release" -Force
+        
+        # Копируем EXE
+        Copy-Item "dist/$exeName.exe" -Destination "release/"
+        
+        # Копируем ВСЕ файлы проекта (кроме служебных)
+        Get-ChildItem -Path . -Recurse | 
+          Where-Object { 
+            $_.FullName -notmatch '\.git|__pycache__|dist|build|release|\.github' -and
+            $_.Name -notmatch '\.pyc$'
+          } |
+          ForEach-Object {
+            $relativePath = $_.FullName.Substring((Get-Location).Path.Length + 1)
+            $destPath = Join-Path "release" $relativePath
+            
+            if ($_.PSIsContainer) {
+              New-Item -ItemType Directory -Path $destPath -Force | Out-Null
+            } else {
+              $destDir = Split-Path $destPath -Parent
+              if (-not (Test-Path $destDir)) {
+                New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+              }
+              Copy-Item $_.FullName -Destination $destPath -Force
+            }
+          }
+        
+        echo "📁 Созданы файлы в папке release/"
+        Get-ChildItem "release/" -Recurse | Select-Object -First 20
+    
+    # 7. 📦 Запаковать в ZIP
+    - name: 📦 Create ZIP archive
+      run: |
+        $exeName = "${{ steps.build-exe.outputs.exeName }}"
+        $zipName = "$exeName-$(Get-Date -Format 'yyyyMMdd-HHmm').zip"
+        
+        # Создаем ZIP архив
+        Compress-Archive -Path "release/*" -DestinationPath "$zipName" -Force
+        
+        echo "📦 Создан архив: $zipName"
+        echo "zipName=$zipName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+    
+    # 8. ⬆️ Загрузить артефакты
+    - name: ⬆️ Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: 🚀 Application-Package
+        path: |
+          ${{ steps.build-exe.outputs.zipName }}
+          dist/*.exe
+          release/
+        retention-days: 90
+    
+    # 9. 📊 Информация о сборке
+    - name: 📊 Build info
+      run: |
+        echo "========================================"
+        echo "✅ СБОРКА УСПЕШНО ЗАВЕРШЕНА!"
+        echo "========================================"
+        echo ""
+        echo "📁 Главный файл: ${{ steps.find-files.outputs.mainFile }}"
+        echo "🚀 EXE файл: ${{ steps.build-exe.outputs.exePath }}"
+        echo "📦 ZIP архив: ${{ steps.build-exe.outputs.zipName }}"
+        echo ""
+        echo "📥 Как скачать:"
+        echo "1. Перейдите во вкладку 'Actions'"
+        echo "2. Выберите эту сборку"
+        echo "3. Внизу найдите 'Artifacts'"
+        echo "4. Скачайте 'Application-Package'"
+        echo ""
+        echo "💡 Совет: Если EXE не запускается, проверьте"
+        echo "наличие всех необходимых файлов в папке release/"
+        echo "========================================"
