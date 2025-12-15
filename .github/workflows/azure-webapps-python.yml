@@ -1,0 +1,62 @@
+name: Build HTTP Server EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install only PyInstaller
+      run: pip install pyinstaller
+    
+    - name: Build server EXE
+      run: |
+        # Простая сборка - http.server в стандартной библиотеке
+        pyinstaller ^
+          --onefile ^
+          --console ^
+          --name "HTTPServer" ^
+          manager.py
+        
+        # Проверим что собралось
+        dir dist\
+    
+    - name: Create server package
+      run: |
+        # Создаём папку с сервером и всеми файлами
+        mkdir -p ServerPackage
+        copy dist\HTTPServer.exe ServerPackage\
+        xcopy css ServerPackage\css /E /I /Y
+        copy index.html ServerPackage\
+        copy *.html ServerPackage\ 2>nul || echo "No additional HTML"
+        copy *.js ServerPackage\ 2>nul || echo "No JS files"
+        
+        # Создаём bat-файл для удобного запуска
+        echo @echo off > ServerPackage\start_server.bat
+        echo echo Starting HTTP Server on port 8000 >> ServerPackage\start_server.bat
+        echo echo Open browser: http://localhost:8000 >> ServerPackage\start_server.bat
+        echo HTTPServer.exe >> ServerPackage\start_server.bat
+        echo pause >> ServerPackage\start_server.bat
+    
+    - name: Create ZIP archive
+      run: |
+        cd ServerPackage
+        7z a -tzip ../HTTP-Server-Package.zip * 2>nul || powershell Compress-Archive -Path * -DestinationPath ../HTTP-Server-Package.zip
+    
+    - uses: actions/upload-artifact@v4
+      with:
+        name: HTTP-Server-Package
+        path: |
+          HTTP-Server-Package.zip
+          ServerPackage/
