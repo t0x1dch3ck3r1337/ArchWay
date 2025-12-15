@@ -1,1 +1,70 @@
+/* hacker.css - ОБЩИЕ стили для всего сайта */
+:root {
+    --matrix-green: #00ff00;
+    --terminal-black: #0a0a0a;
+    --hacker-gray: #1a1a1a;
+}
 
+body.crt {
+    background: var(--terminal-black);
+    color: var(--matrix-green);
+    font-family: 'Hack', monospace;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Навигация */
+nav {
+    border-bottom: 2px solid var(--matrix-green);
+    padding: 15px 0;
+    margin-bottom: 30px;
+}
+
+nav a {
+    color: var(--matrix-green);
+    margin-right: 25px;
+    text-decoration: none;
+    padding: 5px 10px;
+}
+
+nav a:hover {
+    background: var(--matrix-green);
+    color: #000;
+}
+
+/* Общие кнопки */
+.hacker-button {
+    display: inline-block;
+    background: transparent;
+    color: var(--matrix-green);
+    border: 2px solid var(--matrix-green);
+    padding: 12px 24px;
+    text-decoration: none;
+    margin: 15px 5px;
+    transition: all 0.3s;
+}
+
+.hacker-button:hover {
+    background: var(--matrix-green);
+    color: #000;
+    box-shadow: 0 0 15px var(--matrix-green);
+}
+
+/* CRT эффект */
+.crt::after {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 4px;
+    z-index: 1000;
+    pointer-events: none;
+    animation: flicker 0.15s infinite;
+}
+
+.login {max-width: 300px; margin: auto; padding: 30px; }
+.back-link { display: block; margin-top: 20px; }
