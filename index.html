@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArchWay File Server</title>
+    <style>
+        :root {
+            --hacker-green: #00ff00;
+            --terminal-bg: #0a0a0a;
+            --panel-bg: #111111;
+        }
+        
+        body {
+            background: var(--terminal-bg);
+            color: var(--hacker-green);
+            font-family: 'Monospace', 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .crt::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid var(--hacker-green);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 3em;
+            margin: 0;
+            text-shadow: 0 0 10px var(--hacker-green);
+        }
+        
+        .server-info {
+            background: var(--panel-bg);
+            border: 1px solid var(--hacker-green);
+            padding: 20px;
+            margin: 25px 0;
+        }
+        
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .file-card {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .file-card:hover {
+            border-color: var(--hacker-green);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+        }
+        
+        .file-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+        
+        .file-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+        
+        .file-size {
+            color: #aaa;
+            margin: 5px 0;
+        }
+        
+        .file-date {
+            color: #666;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            background: transparent;
+            color: var(--hacker-green);
+            border: 2px solid var(--hacker-green);
+            padding: 10px 15px;
+            text-decoration: none;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .download-btn:hover {
+            background: var(--hacker-green);
+            color: #000;
+        }
+        
+        .status-online {
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #333;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .files-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ArchWay File Server</h1>
+            <div style="color: #aaa;">Local File Sharing</div>
+        </header>
+        
+        <div class="status-online">
+            🟢 ONLINE - Last update: 22:09:41
+        </div>
+        
+        <div class="server-info">
+            <h3>📁 Available Files</h3>
+            <p>Directory: /storage/emulated/0/Download/ArchWay Web</p>
+            <p>Auto-update every 5 seconds</p>
+        </div>
+        
+        <div class="files-grid">
+            <div class="file-card">
+                <div class="file-icon">🌐</div>
+                <div class="file-name">isos.html</div>
+                <div class="file-size">Size:  KB</div>
+                <div class="file-date">Modified: 2025-12-14 21:48</div>
+                <a href="isos.html" class="download-btn" download>
+                    ⬇️ Download
+                </a>
+            </div>
+            <div class="file-card">
+                <div class="file-icon">🌐</div>
+                <div class="file-name">isos.html</div>
+                <div class="file-size">Size:  KB</div>
+                <div class="file-date">Modified: 2025-12-14 21:48</div>
+                <a href="isos.html" class="download-btn" download>
+                    ⬇️ Download
+                </a>
+            </div>
+            <div class="file-card">
+                <div class="file-icon">📄</div>
+                <div class="file-name">monitor.py</div>
+                <div class="file-size">Size:  KB</div>
+                <div class="file-date">Modified: 2025-12-14 22:07</div>
+                <a href="monitor.py" class="download-btn" download>
+                    ⬇️ Download
+                </a>
+            </div>
+            <div class="file-card">
+                <div class="file-icon">📄</div>
+                <div class="file-name">monitor.py</div>
+                <div class="file-size">Size:  KB</div>
+                <div class="file-date">Modified: 2025-12-14 22:07</div>
+                <a href="monitor.py" class="download-btn" download>
+                    ⬇️ Download
+                </a>
+            </div>
+        </div>
+        
+        <footer>
+            <p>ArchWay File Server • Files: 2 • Total:  KB</p>
+            <p>Generated: 2025-12-14 22:09:42</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Авто-обновление страницы
+        setTimeout(function() {
+            location.reload();
+        }, 5000);
+    </script>
+</body>
+</html>
+        </div>
+        
+        <footer>
+            <p>ArchWay File Server • Files: 2 • Total:  KB</p>
+            <p>Generated: 2025-12-14 22:09:42</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Авто-обновление страницы
+        setTimeout(function() {
+            location.reload();
+        }, 5000);
+    </script>
+</body>
+</html>
