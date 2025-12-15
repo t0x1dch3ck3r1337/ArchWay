@@ -1,0 +1,39 @@
+name: Build HTTP Server EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install PyInstaller
+      run: pip install pyinstaller
+    
+    - name: Build server EXE
+      shell: cmd  # ← ВАЖНО: Используем CMD вместо PowerShell
+      run: |
+        pyinstaller ^
+          --onefile ^
+          --console ^
+          --name "HTTPServer" ^
+          manager.py
+    
+    - name: Check build
+      run: dir dist\
+    
+    - name: Upload EXE
+      uses: actions/upload-artifact@v4
+      with:
+        name: http-server-exe
+        path: dist/HTTPServer.exe
